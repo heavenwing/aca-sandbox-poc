@@ -66,6 +66,7 @@ Copy-Item .env.example .env
 | `CHART_SANDBOX_DISK_ID` | 由 chart 自定义镜像创建的 ACA Sandbox Disk ID。 |
 | `SUM_SITE_SANDBOX_DISK_ID` | 由 fetch-site 自定义镜像创建的 ACA Sandbox Disk ID。 |
 | `CHART_OUTPUT_DIR` | 图表本地保存目录，默认 `output/charts`。 |
+| `SUM_SITE_SAVE_OUTPUT` | 是否同时将网站摘要保存为 `output/sum-sites/*.md`；设置为 `true` 启用，默认关闭。 |
 
 ## 构建两个 Sandbox 镜像
 
@@ -122,6 +123,7 @@ uv run python sum_site_agent.py
 ```
 
 对于 SPA，可输入网站主页 URL。runner 会先尝试普通 HTTP 抓取，只有内容不足时才启动 Chromium。输入 `exit`、`quit` 或 `退出` 结束任一 Agent。
+当 `SUM_SITE_SAVE_OUTPUT=true` 时，每次成功返回的终端摘要还会写入 `output/sum-sites/sum-site-<uuid>.md`。
 
 ## 验证
 

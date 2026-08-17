@@ -66,3 +66,23 @@ def test_normalize_public_url_rejects_credentials() -> None:
         assert "用户名" in str(error)
     else:
         raise AssertionError("Expected credentials in URL to be rejected")
+
+
+def test_sum_site_output_is_disabled_by_default(monkeypatch, tmp_path) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SUM_SITE_SAVE_OUTPUT", raising=False)
+
+    assert sum_site_agent.save_summary_if_enabled("摘要") is None
+    assert not (tmp_path / "output" / "sum-sites").exists()
+
+
+def test_sum_site_output_writes_markdown_when_enabled(monkeypatch, tmp_path) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SUM_SITE_SAVE_OUTPUT", "true")
+
+    output_path = sum_site_agent.save_summary_if_enabled("# 网站摘要\n\n正文")
+
+    assert output_path is not None
+    assert output_path.parent == (tmp_path / "output" / "sum-sites").resolve()
+    assert output_path.suffix == ".md"
+    assert output_path.read_text(encoding="utf-8") == "# 网站摘要\n\n正文\n"
