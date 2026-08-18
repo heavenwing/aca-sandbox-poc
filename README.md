@@ -7,6 +7,8 @@
 
 `sandboxes/` 包含两个构建自定义 Sandbox Disk 所需的独立镜像上下文，不是额外 agent。
 
+希望继续尝试标准问答与 ACA Scheduled Job 的用户，可进入独立的[高级实验](advanced/aca-scheduled-job/README.md)。该目录有自己的依赖、配置、测试和 Docker 构建上下文，不影响本基础 POC。
+
 ## 架构和安全边界
 
 ```mermaid
@@ -67,7 +69,6 @@ Copy-Item .env.example .env
 | `SUM_SITE_SANDBOX_DISK_ID` | 由 fetch-site 自定义镜像创建的 ACA Sandbox Disk ID。 |
 | `CHART_OUTPUT_DIR` | 图表本地保存目录，默认 `output/charts`。 |
 | `SUM_SITE_SAVE_OUTPUT` | 是否同时将网站摘要保存为 `output/sum-sites/*.md`；设置为 `true` 启用，默认关闭。 |
-
 ## 构建两个 Sandbox 镜像
 
 ### Chart 镜像
@@ -145,7 +146,6 @@ uv run pytest
 - `/opt/sum-site/fetch_runner.py` 不存在或 Chromium 启动失败：sum-site Disk 不是由 `sandboxes/fetch-site` 镜像创建。
 - 网站被拒绝：这是预期的 SSRF 防护。只允许可 DNS 解析为公网 IP 的公开 HTML 页面。
 - 图表脚本错误：chart agent 会把第一次 Sandbox 错误反馈给模型自动修复一次；若仍失败，请简化数据描述后重试。
-
 ## 清理
 
 程序会在每次执行后删除短生命周期 Sandbox。按需删除本地 `output/charts` 文件；镜像、Sandbox Disk、Sandbox Group 和 ACR 的长期资源由其所有者按组织流程清理。
