@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
@@ -99,7 +100,9 @@ def save_summary_if_enabled(content: str) -> Path | None:
         return None
 
     SUM_SITE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = SUM_SITE_OUTPUT_DIR / f"sum-site-{uuid.uuid4().hex}.md"
+    now = datetime.now(UTC)
+    timestamp = f'{now.strftime("%Y%m%dT%H%M%S")}{now.microsecond // 1000:03d}Z'
+    output_path = SUM_SITE_OUTPUT_DIR / f"sum-site-{timestamp}.md"
     output_path.write_text(f"{content}\n", encoding="utf-8")
     return output_path.resolve()
 

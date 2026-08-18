@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+import re
 
 import chart_agent
 import sum_site_agent
@@ -84,5 +85,6 @@ def test_sum_site_output_writes_markdown_when_enabled(monkeypatch, tmp_path) -> 
 
     assert output_path is not None
     assert output_path.parent == (tmp_path / "output" / "sum-sites").resolve()
+    assert re.fullmatch(r"sum-site-\d{8}T\d{9}Z\.md", output_path.name)
     assert output_path.suffix == ".md"
     assert output_path.read_text(encoding="utf-8") == "# 网站摘要\n\n正文\n"
