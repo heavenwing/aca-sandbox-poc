@@ -1,0 +1,104 @@
+# Reusable workflow for building Docker images
+#
+# Usage:
+#   jobs:
+#     build:
+#       uses: ./.github/workflows/build-template.yml
+#       with:
+#         service_name: ai-abp-agent-chart
+#         dockerfile: ./docker/agent-chart.dockerfile
+#         context: .
+#         image_description: AI ABP Chart Agent Service
+#         build_args: |
+#           APP_PORT=8084
+#           INSTALL_ODBC=true
+#       secrets:
+#         REGISTRY_LOGIN_SERVER: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+#         REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+#         REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+
+name: Build Job
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+      dockerfile:
+        required: false
+        type: string
+        default: ./docker/default.dockerfile
+      context:
+        required: false
+        type: string
+        default: .
+      image_description:
+        required: false
+        type: string
+        default: AI ABP Service
+      build_args:
+        required: false
+        type: string
+        default: ""
+    secrets:
+      REGISTRY_LOGIN_SERVER:
+        required: true
+      REGISTRY_USERNAME:
+        required: true
+      REGISTRY_PASSWORD:
+        required: true
+
+env:
+  SERVICE_NAME: ${{ inputs.service_name }}
+  DOCKERFILE: ${{ inputs.dockerfile }}
+  IMAGE_DESCRIPTION: ${{ inputs.image_description }}
+  BUILD_ARGS: ${{ inputs.build_args }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.SERVICE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.description=${{ env.IMAGE_DESCRIPTION }}
+            org.opencontainers.image.source={{github.server_url}}/{{github.repository}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ env.DOCKERFILE }}
+          build-args: |
+            APP_NAME=${{ env.SERVICE_NAME }}
+            ${{ env.BUILD_ARGS }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

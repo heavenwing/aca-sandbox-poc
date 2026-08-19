@@ -1,0 +1,20 @@
+name: Build and Push ACA Sum Site Web Browsing Job Image
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-template.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      service_name: aca-sum-site-job
+      dockerfile: ./advanced/aca-sum-site-job/Dockerfile
+      context: ./advanced/aca-sum-site-job
+      image_description: AI ABP ACA Sum Site Web Browsing Job Image
+    secrets:
+      REGISTRY_LOGIN_SERVER: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+      REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
