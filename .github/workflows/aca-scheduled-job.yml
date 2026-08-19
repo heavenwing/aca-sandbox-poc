@@ -1,4 +1,4 @@
-name: Build and Push ACA Sum Site Web Browsing Job Image
+name: Build and Push ACA Scheduled Job Image
 
 on:
   workflow_dispatch:
@@ -10,10 +10,10 @@ jobs:
       contents: read
       packages: write
     with:
-      service_name: aca-sum-site-job
-      dockerfile: ./advanced/aca-sum-site-job/Dockerfile
-      context: ./advanced/aca-sum-site-job
-      image_description: AI ABP ACA Sum Site Web Browsing Job Image
+      service_name: aca-scheduled-job
+      dockerfile: ./advanced/aca-scheduled-job/Dockerfile
+      context: ./advanced/aca-scheduled-job
+      image_description: AI ABP ACA Scheduled Job Image
     secrets:
       REGISTRY_LOGIN_SERVER: ${{ secrets.REGISTRY_LOGIN_SERVER }}
       REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
