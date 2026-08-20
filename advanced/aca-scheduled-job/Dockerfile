@@ -14,7 +14,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY sum_site_job.py ./
-RUN chown -R app:app /app
+RUN mkdir -p /mnt/output && chown -R app:app /app /mnt/output
 
 USER app
 ENTRYPOINT ["python", "sum_site_job.py"]

@@ -27,6 +27,7 @@ def _env() -> dict[str, str]:
         "ACA_SANDBOX_RESOURCE_GROUP": "sandbox-rg",
         "ACA_SANDBOX_GROUP": "sandbox-group",
         "SUM_SITE_SANDBOX_DISK_ID": "/subscriptions/sandbox-sub/disks/site",
+        "ACA_JOB_OUTPUT_STORAGE_NAME": "summary-files",
     }
 
 
@@ -70,6 +71,16 @@ def test_build_payload_uses_secret_refs_and_single_replica() -> None:
         "secretRef": "azure-openai-api-key",
     }
     assert {item["name"]: item for item in container["env"]}["SUM_SITE_URL"]["value"] == request.url
+    assert {item["name"]: item for item in container["env"]}["SUM_SITE_OUTPUT_PATH"]["value"] == "/mnt/output"
+    assert container["volumeMounts"] == [{
+        "volumeName": "summary-output",
+        "mountPath": "/mnt/output",
+    }]
+    assert payload["properties"]["template"]["volumes"] == [{
+        "name": "summary-output",
+        "storageType": "AzureFile",
+        "storageName": "summary-files",
+    }]
     assert "registry-secret-value" not in json.dumps(container)
     assert "openai-secret-value" not in json.dumps(container)
 
@@ -103,6 +114,18 @@ def test_invalid_config_fails_before_credential_creation() -> None:
         jobs.create_or_update_job("example.com", 8, 0, env=env, credential_factory=credential_factory)
 
     credential_factory.assert_not_called()
+
+
+def test_invalid_output_volume_config_is_rejected() -> None:
+    env = _env()
+    env["ACA_JOB_OUTPUT_STORAGE_TYPE"] = "EmptyDir"
+    with pytest.raises(ValueError, match="AzureFile 或 NfsAzureFile"):
+        jobs.load_config(env)
+
+    env = _env()
+    env["SUM_SITE_OUTPUT_PATH"] = "relative/output"
+    with pytest.raises(ValueError, match="绝对路径"):
+        jobs.load_config(env)
 
 
 def test_arm_error_is_reduced_to_status_code_and_message() -> None:

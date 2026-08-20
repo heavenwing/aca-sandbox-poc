@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -58,10 +59,11 @@ def test_ask_agent_registers_only_bounded_tool(monkeypatch) -> None:
     assert "小时和分钟" in created["instructions"]
 
 
-def test_one_shot_runs_once_without_input(monkeypatch, capsys) -> None:
+def test_one_shot_runs_once_without_input(monkeypatch, capsys, tmp_path) -> None:
     agent = MagicMock()
     run_summary = AsyncMock(return_value="网站摘要")
     monkeypatch.setenv("SUM_SITE_URL", "example.com")
+    monkeypatch.setenv("SUM_SITE_OUTPUT_PATH", str(tmp_path))
     monkeypatch.setattr(sum_site_job, "create_agent", lambda: agent)
     monkeypatch.setattr(sum_site_job, "run_summary", run_summary)
     monkeypatch.setattr("builtins.input", MagicMock(side_effect=AssertionError("must not read input")))
@@ -71,6 +73,17 @@ def test_one_shot_runs_once_without_input(monkeypatch, capsys) -> None:
     assert exit_code == 0
     run_summary.assert_awaited_once_with(agent, "请总结 https://example.com/")
     assert capsys.readouterr().out.strip() == "网站摘要"
+    output_files = list(tmp_path.glob("https-example-com-*.md"))
+    assert len(output_files) == 1
+    assert output_files[0].read_text(encoding="utf-8") == "网站摘要\n"
+
+
+def test_summary_filename_contains_safe_url_and_utc_timestamp() -> None:
+    timestamp = datetime(2026, 8, 20, 12, 34, 56, tzinfo=timezone.utc)
+
+    filename = sum_site_job.summary_filename("https://example.com/news?id=42", timestamp)
+
+    assert filename == "https-example-com-news-id-42-20260820T123456Z.md"
 
 
 def test_one_shot_failure_returns_nonzero(monkeypatch, capsys) -> None:

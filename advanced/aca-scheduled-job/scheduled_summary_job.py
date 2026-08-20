@@ -50,6 +50,9 @@ class JobConfig:
     sandbox_resource_group: str
     sandbox_group: str
     sandbox_disk_id: str
+    output_storage_name: str
+    output_storage_type: str = "AzureFile"
+    output_path: str = "/mnt/output"
     name_prefix: str = "sum-site"
     api_version: str = DEFAULT_API_VERSION
     cpu: str = "0.5"
@@ -170,6 +173,9 @@ def load_config(env: Mapping[str, str] | None = None) -> JobConfig:
         sandbox_resource_group=_required(values, "ACA_SANDBOX_RESOURCE_GROUP"),
         sandbox_group=_required(values, "ACA_SANDBOX_GROUP"),
         sandbox_disk_id=_required(values, "SUM_SITE_SANDBOX_DISK_ID"),
+        output_storage_name=_required(values, "ACA_JOB_OUTPUT_STORAGE_NAME"),
+        output_storage_type=values.get("ACA_JOB_OUTPUT_STORAGE_TYPE", "AzureFile").strip(),
+        output_path=values.get("SUM_SITE_OUTPUT_PATH", "/mnt/output").strip() or "/mnt/output",
         name_prefix=values.get("ACA_JOB_NAME_PREFIX", "sum-site").strip(),
         api_version=values.get("ACA_JOB_API_VERSION", DEFAULT_API_VERSION).strip(),
         cpu=values.get("ACA_JOB_CPU", "0.5").strip(),
@@ -189,6 +195,10 @@ def load_config(env: Mapping[str, str] | None = None) -> JobConfig:
         raise ValueError("ACA_JOB_CPU 无效。")
     if not re.fullmatch(r"\d+(?:\.\d+)?(?:Mi|Gi)", config.memory):
         raise ValueError("ACA_JOB_MEMORY 无效。")
+    if config.output_storage_type not in {"AzureFile", "NfsAzureFile"}:
+        raise ValueError("ACA_JOB_OUTPUT_STORAGE_TYPE 必须是 AzureFile 或 NfsAzureFile。")
+    if not config.output_path.startswith("/"):
+        raise ValueError("SUM_SITE_OUTPUT_PATH 必须是容器内的绝对路径。")
     return config
 
 
@@ -203,6 +213,7 @@ def build_payload(config: JobConfig, request: ScheduledSummaryRequest) -> dict[s
         "ACA_SANDBOX_RESOURCE_GROUP": config.sandbox_resource_group,
         "ACA_SANDBOX_GROUP": config.sandbox_group,
         "SUM_SITE_SANDBOX_DISK_ID": config.sandbox_disk_id,
+        "SUM_SITE_OUTPUT_PATH": config.output_path,
     }
     environment = [{"name": name, "value": value} for name, value in non_secret_env.items()]
     environment.append({"name": "AZURE_OPENAI_API_KEY", "secretRef": "azure-openai-api-key"})
@@ -233,12 +244,23 @@ def build_payload(config: JobConfig, request: ScheduledSummaryRequest) -> dict[s
                     "passwordSecretRef": "registry-password",
                 }],
             },
-            "template": {"containers": [{
-                "name": "sum-site",
-                "image": config.image,
-                "env": environment,
-                "resources": {"cpu": config.cpu, "memory": config.memory},
-            }]},
+            "template": {
+                "containers": [{
+                    "name": "sum-site",
+                    "image": config.image,
+                    "env": environment,
+                    "resources": {"cpu": config.cpu, "memory": config.memory},
+                    "volumeMounts": [{
+                        "volumeName": "summary-output",
+                        "mountPath": config.output_path,
+                    }],
+                }],
+                "volumes": [{
+                    "name": "summary-output",
+                    "storageType": config.output_storage_type,
+                    "storageName": config.output_storage_name,
+                }],
+            },
         },
     }
 
