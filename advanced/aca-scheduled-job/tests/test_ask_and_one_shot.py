@@ -59,6 +59,33 @@ def test_ask_agent_registers_only_bounded_tool(monkeypatch) -> None:
     assert "小时和分钟" in created["instructions"]
 
 
+def test_sandbox_client_selects_user_assigned_identity(monkeypatch) -> None:
+    credential = MagicMock()
+    credential_factory = MagicMock(return_value=credential)
+    sandbox_client = MagicMock()
+    sandbox_client_factory = MagicMock(return_value=sandbox_client)
+    monkeypatch.setenv("AZURE_CLIENT_ID", "11111111-2222-3333-4444-555555555555")
+    monkeypatch.setenv("ACA_SANDBOX_REGION", "eastasia")
+    monkeypatch.setenv("AZURE_SUBSCRIPTION_ID", "sandbox-sub")
+    monkeypatch.setenv("ACA_SANDBOX_RESOURCE_GROUP", "sandbox-rg")
+    monkeypatch.setenv("ACA_SANDBOX_GROUP", "sandbox-group")
+    monkeypatch.setattr(sum_site_job, "DefaultAzureCredential", credential_factory)
+    monkeypatch.setattr(sum_site_job, "endpoint_for_region", lambda region: f"https://{region}.example.com")
+    monkeypatch.setattr(sum_site_job, "SandboxGroupClient", sandbox_client_factory)
+
+    assert sum_site_job.create_sandbox_client() is sandbox_client
+    credential_factory.assert_called_once_with(
+        managed_identity_client_id="11111111-2222-3333-4444-555555555555"
+    )
+    sandbox_client_factory.assert_called_once_with(
+        "https://eastasia.example.com",
+        credential,
+        subscription_id="sandbox-sub",
+        resource_group="sandbox-rg",
+        sandbox_group="sandbox-group",
+    )
+
+
 def test_one_shot_runs_once_without_input(monkeypatch, capsys, tmp_path) -> None:
     agent = MagicMock()
     run_summary = AsyncMock(return_value="网站摘要")

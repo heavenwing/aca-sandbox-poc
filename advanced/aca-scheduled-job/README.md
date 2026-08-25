@@ -12,7 +12,7 @@ Copy-Item .env.example .env
 az login
 ```
 
-填写 `.env`。运行 `ask_agent.py` 的身份需要目标范围的 `Microsoft.App/jobs/read`、`Microsoft.App/jobs/write` 和 managed environment 关联权限。`ACA_JOB_IDENTITY_ID` 指向的已有用户分配托管身份需要执行 ACA Sandbox 的权限。
+填写 `.env`。运行 `ask_agent.py` 的身份需要目标范围的 `Microsoft.App/jobs/read`、`Microsoft.App/jobs/write` 和 managed environment 关联权限。`ACA_JOB_IDENTITY_ID` 是已有用户分配托管身份的完整 ARM 资源 ID，`ACA_JOB_IDENTITY_CLIENT_ID` 是同一身份的 Client ID GUID；该身份需要执行 ACA Sandbox 的权限。
 
 ## 构建 Job 镜像
 

@@ -36,6 +36,7 @@ class JobConfig:
     resource_group: str
     environment_id: str
     identity_id: str
+    identity_client_id: str
     location: str
     image: str
     registry_server: str
@@ -159,6 +160,7 @@ def load_config(env: Mapping[str, str] | None = None) -> JobConfig:
         resource_group=_required(values, "ACA_JOB_RESOURCE_GROUP"),
         environment_id=_required(values, "ACA_JOB_ENVIRONMENT_ID"),
         identity_id=_required(values, "ACA_JOB_IDENTITY_ID"),
+        identity_client_id=_required(values, "ACA_JOB_IDENTITY_CLIENT_ID"),
         location=_required(values, "ACA_JOB_LOCATION"),
         image=_required(values, "ACA_JOB_IMAGE"),
         registry_server=_required(values, "ACA_JOB_REGISTRY_SERVER"),
@@ -205,6 +207,7 @@ def load_config(env: Mapping[str, str] | None = None) -> JobConfig:
 def build_payload(config: JobConfig, request: ScheduledSummaryRequest) -> dict[str, Any]:
     non_secret_env = {
         "SUM_SITE_URL": request.url,
+        "AZURE_CLIENT_ID": config.identity_client_id,
         "AZURE_OPENAI_ENDPOINT": config.azure_openai_endpoint,
         "AZURE_OPENAI_CHAT_DEPLOYMENT_NAME": config.azure_openai_deployment,
         "OPENAI_API_VERSION": config.openai_api_version,

@@ -83,7 +83,7 @@ def normalize_public_url(value: str) -> str:
 def create_sandbox_client() -> SandboxGroupClient:
     return SandboxGroupClient(
         endpoint_for_region(required_env("ACA_SANDBOX_REGION")),
-        DefaultAzureCredential(),
+        DefaultAzureCredential(managed_identity_client_id=required_env("AZURE_CLIENT_ID")),
         subscription_id=required_env("AZURE_SUBSCRIPTION_ID"),
         resource_group=required_env("ACA_SANDBOX_RESOURCE_GROUP"),
         sandbox_group=required_env("ACA_SANDBOX_GROUP"),

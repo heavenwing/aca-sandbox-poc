@@ -13,6 +13,7 @@ def _env() -> dict[str, str]:
         "ACA_JOB_RESOURCE_GROUP": "jobs-rg",
         "ACA_JOB_ENVIRONMENT_ID": "/subscriptions/job-sub/resourceGroups/jobs-rg/providers/Microsoft.App/managedEnvironments/env",
         "ACA_JOB_IDENTITY_ID": "/subscriptions/job-sub/resourceGroups/jobs-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/sum-site",
+        "ACA_JOB_IDENTITY_CLIENT_ID": "11111111-2222-3333-4444-555555555555",
         "ACA_JOB_LOCATION": "eastasia",
         "ACA_JOB_IMAGE": "registry.example.com/sum-site:sha-123",
         "ACA_JOB_REGISTRY_SERVER": "registry.example.com",
@@ -71,6 +72,9 @@ def test_build_payload_uses_secret_refs_and_single_replica() -> None:
         "secretRef": "azure-openai-api-key",
     }
     assert {item["name"]: item for item in container["env"]}["SUM_SITE_URL"]["value"] == request.url
+    assert {item["name"]: item for item in container["env"]}["AZURE_CLIENT_ID"]["value"] == (
+        config.identity_client_id
+    )
     assert {item["name"]: item for item in container["env"]}["SUM_SITE_OUTPUT_PATH"]["value"] == "/mnt/output"
     assert container["volumeMounts"] == [{
         "volumeName": "summary-output",
